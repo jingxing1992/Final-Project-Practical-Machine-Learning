@@ -123,7 +123,7 @@ predtest<-predict(modFit,test)
 # [1] B A B A A E D B A A B C B A E E A B B B
 # Levels: A B C D E
 ```
-The result we get is  B A B A A E D B A A B C B A E E A B B B
+The result we get is  B A B A A E D B A A B C B A E E A B B B, the error rate should be 3% so among the 20 test objects, we may not get a wrong one. The accuracy is 97%.
 Then we make each of them into text file:
 ```{r}
 answers = predtest

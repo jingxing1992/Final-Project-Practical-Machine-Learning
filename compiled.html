@@ -1,0 +1,141 @@
+---
+title: "Practical Machine Learning Project"
+output: html_document
+---
+
+
+```{r}
+library(caret)
+library(kernlab)
+```
+First, we input the training data
+```{r}
+data<-read.csv("pml-training.csv",header=TRUE)
+data<-data[,-1]
+n=1
+col<-c()
+#remove all NA data and missing value columns
+for ( i in 1:ncol(data)){
+  if ((is.na(data[1,i])==TRUE) ||(data[1,i] =="") ){
+    col[n]<-i
+    n=n+1
+  }
+}
+data<-data[,-col]
+#remove all data which I considered not necessary related to response variable
+data<-data[,-c(1,4,5)]
+#change our response variable into factors
+data$classe<-factor(data$classe)
+```
+As some of our data have missing value, do deal with those, I chose to delete them and also, I'm not going to include some explanatory variables which seem unrelated to our response variable like date and time
+```{r}
+#As our training data is too large, I chose to use 10% of them
+inTrain<-createDataPartition(y=data$classe, p = 0.1,list=FALSE)
+training<-data[inTrain,]
+#Do the training use random forest as we don't need feature selection
+modFit<-train(classe~.,data=training,method="rf",prox=TRUE)
+#> modFit
+#Random Forest 
+
+#1964 samples
+#55 predictor
+#5 classes: 'A', 'B', 'C', 'D', 'E' 
+
+#No pre-processing
+#Resampling: Bootstrapped (25 reps) 
+
+#Summary of sample sizes: 1964, 1964, 1964, 1964, 1964, 1964, ... 
+
+#Resampling results across tuning parameters:
+  
+#  mtry  Accuracy  Kappa  Accuracy SD  Kappa SD
+#    2    0.945     0.931  0.00746      0.00955 
+#   28    0.969     0.961  0.00713      0.00903 
+#   55    0.966     0.958  0.00681      0.00859 
+
+#Accuracy was used to select the optimal model using  the largest value.
+#The final value used for the model was mtry = 28. 
+```
+I chose to use randomForest to build the model as this method save time and frees us from doing feature selection. It's good for classification prediction. But our training data is too big for R to handle, so I decided only to use 10% of them to save time.
+The model on the training data I selected has following accuracy:
+
+Random Forest 
+
+1964 samples
+  55 predictor
+   5 classes: 'A', 'B', 'C', 'D', 'E' 
+
+No pre-processing
+Resampling: Bootstrapped (25 reps) 
+
+Summary of sample sizes: 1964, 1964, 1964, 1964, 1964, 1964, ... 
+
+Resampling results across tuning parameters:
+
+  mtry  Accuracy  Kappa  Accuracy SD  Kappa SD
+   2    0.945     0.931  0.00746      0.00955 
+  28    0.969     0.961  0.00713      0.00903 
+  55    0.966     0.958  0.00681      0.00859 
+
+Accuracy was used to select the optimal model using  the largest value.
+The final value used for the model was mtry = 28. 
+```{r}
+predtrain<-predict(modFit, data)
+data$predRight<- predtrain==data$classe
+#See the acuracy of our model on training data
+table(predtrain,data$classe)
+#predtrain    A    B    C    D    E
+#             A 5560   49    2    0    0
+#             B    0 3699   12    0    0
+#             C    0   49 3406   78   18
+#             D    0    0    2 3127   37
+#             E   20    0    0   11 3552
+```
+Then I tried to predict the whole training data and have following results compared to the true ones:
+
+predtrain    A    B    C    D    E
+        A 5560   49    2    0    0
+        B    0 3699   12    0    0
+        C    0   49 3406   78   18
+        D    0    0    2 3127   37
+        E   20    0    0   11 3552
+
+Then we begin to predict our test data with inputing the data:
+```{r}
+#Input test data
+test<-read.csv("pml-testing.csv",header=TRUE)
+test<-test[,-1]
+n=1
+testcol<-c()
+for ( i in 1:ncol(test)){
+  if ((is.na(test[1,i])==TRUE) ||(test[1,i] =="") ){
+    testcol[n]<-i
+    n=n+1
+  }
+}
+test<-test[,-testcol]
+```
+We also deal with the data to make it easier for us to predict.
+```{r}
+# Do the same data cleaning on test data
+test<-test[,-c(1,4,5)]
+#predict
+predtest<-predict(modFit,test)
+# [1] B A B A A E D B A A B C B A E E A B B B
+# Levels: A B C D E
+```
+The result we get is  B A B A A E D B A A B C B A E E A B B B
+Then we make each of them into text file:
+```{r}
+answers = predtest
+pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_id_",i,".txt")
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
+pml_write_files(answers)
+```
+
+
